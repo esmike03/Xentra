@@ -160,3 +160,5 @@ Route::get('/check-address', function () {
 Route::post('/send-message', [MessageController::class, 'store'])->name('send.message');
 //admin display messages
 Route::get('/admin/messages', [MessageController::class, 'displayMessages'])->name('admin.messages');
+
+Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');

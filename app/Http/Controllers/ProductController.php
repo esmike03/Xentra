@@ -165,4 +165,43 @@ class ProductController extends Controller
 
         return redirect()->back()->with('success', 'Product deleted successfully!');
     }
+
+    public function update(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
+        // Validate the incoming request
+        $request->validate([
+            'category' => 'required|string|max:255',
+            'name' => 'required|string|max:255',
+            'brand' => 'required|string|max:255',
+            'details' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048'
+        ]);
+
+        // Update product details
+        $product->category = $request->category;
+        $product->name = $request->name;
+        $product->brand = $request->brand;
+        $product->details = $request->details;
+
+        // Handle image upload if a new image is provided
+        if ($request->hasFile('image')) {
+            // Delete old image if it exists
+            if ($product->image && Storage::exists('public/' . $product->image)) {
+                Storage::delete('public/' . $product->image);
+            }
+
+            // Store new image
+            $imagePath = $request->file('image')->store('product_images', 'public');
+            $product->image = $imagePath;
+        }
+
+        $product->save();
+
+        return response()->json([
+            'message' => 'Product updated successfully',
+            'product' => $product
+        ]);
+    }
 }

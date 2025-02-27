@@ -79,7 +79,7 @@
 
         </nav>
     </aside>
-    <main class="flex-1 ml-0 sm:ml-64 p-4 transition-all">
+    <main class="flex-1 ml-0 sm:ml-64 p-4 transition-all" x-data="productEditor()">
         <header
             class="fixed border-b-4 border-orange-500 top-0 left-0 right-0 mb-2 px-4 shadow bg-white z-50 backdrop-filter backdrop-blur-xl bg-opacity-30">
 
@@ -200,9 +200,11 @@
                                         </button>
                                     </form>
                                     <a href="#"
-                                        class="text-blue-500 text-xs  hover:bg-blue-800 font-medium rounded-lg p-1">
+                                        @click.prevent="openEditModal({{ $product->id }}, '{{ $product->category }}', '{{ $product->name }}', '{{ $product->brand }}', '{{ $product->details }}')"
+                                        class="text-blue-500 text-xs hover:bg-blue-800 font-medium rounded-lg p-1">
                                         <i class="fa fa-pen"></i>
                                     </a>
+
                                 </div>
 
                             </td>
@@ -215,6 +217,50 @@
                     @endforelse
                 </tbody>
             </table>
+
+            <!-- Edit Product Modal -->
+            <div x-show="editModalOpen"
+                class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                <div class="bg-white rounded-lg shadow-lg p-6 w-1/3">
+                    <h2 class="text-lg font-bold mb-4">Edit Product</h2>
+
+                    <form @submit.prevent="updateProduct">
+                        <input type="hidden" x-model="editProduct.id">
+
+                        <div class="mb-2">
+                            <label class="block text-sm font-semibold">Category</label>
+                            <input type="text" x-model="editProduct.category" class="w-full border p-2 rounded">
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="block text-sm font-semibold">Name</label>
+                            <input type="text" x-model="editProduct.name" class="w-full border p-2 rounded">
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="block text-sm font-semibold">Brand</label>
+                            <input type="text" x-model="editProduct.brand" class="w-full border p-2 rounded">
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="block text-sm font-semibold">Details</label>
+                            <textarea x-model="editProduct.details" class="w-full border p-2 rounded"></textarea>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="block text-sm font-semibold">Image</label>
+                            <input type="file" @change="handleFileUpload" class="w-full border p-2 rounded">
+                        </div>
+
+                        <div class="flex justify-end space-x-2 mt-4">
+                            <button type="button" @click="editModalOpen = false"
+                                class="px-4 py-2 bg-gray-400 text-white rounded-lg">Cancel</button>
+                            <button type="submit"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
         </div>
     </main>
@@ -251,6 +297,62 @@
             sublist.classList.toggle('hidden');
             icon.classList.toggle('rotate-180');
         });
+
+
+        function productEditor() {
+            return {
+                editModalOpen: false,
+                editProduct: {
+                    id: null,
+                    category: '',
+                    name: '',
+                    brand: '',
+                    details: '',
+                    image: null,
+                },
+
+                openEditModal(id, category, name, brand, details) {
+                    this.editProduct.id = id;
+                    this.editProduct.category = category;
+                    this.editProduct.name = name;
+                    this.editProduct.brand = brand;
+                    this.editProduct.details = details;
+                    this.editModalOpen = true;
+                },
+
+                handleFileUpload(event) {
+                    this.editProduct.image = event.target.files[0];
+                },
+
+                async updateProduct() {
+                    let formData = new FormData();
+                    formData.append('_method', 'PUT'); // Laravel requires this for PUT requests
+                    formData.append('category', this.editProduct.category);
+                    formData.append('name', this.editProduct.name);
+                    formData.append('brand', this.editProduct.brand);
+                    formData.append('details', this.editProduct.details);
+                    if (this.editProduct.image) {
+                        formData.append('image', this.editProduct.image);
+                    }
+
+                    let response = await fetch(`/products/${this.editProduct.id}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        Swal.fire("Success!", "Product updated successfully.", "success").then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire("Error!", "Failed to update product.", "error");
+                    }
+                }
+            };
+        }
     </script>
 </body>
 
